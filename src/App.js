@@ -9,7 +9,8 @@ import ToyContainer from './components/ToyContainer'
 class App extends React.Component{
 
   state = {
-    display: false
+    display: false,
+    toys: []
   }
 
   handleClick = () => {
@@ -19,20 +20,62 @@ class App extends React.Component{
     })
   }
 
+  componentDidMount(){
+    fetch('http://localhost:3000/toys')
+    .then(resp => resp.json())
+    .then(data => {
+      this.setState({
+        toys: data
+      })
+    })
+  }
+
+  addNewToy = (newToy) => {
+    this.setState({toys: [...this.state.toys, newToy]})
+  }
+
+  deleteToy = (id) => {
+    // console.log(toy)
+    fetch(`http://localhost:3000/toys/${id}`, {method: 'DELETE'})
+    let newToys = this.state.toys.filter(toys => toys.id !== id)
+    this.setState({
+      toys: newToys
+    })
+  }
+
+  updateLikes = (toy) => {
+    let moreLikes = {
+      likes: toy.likes + 1
+    }
+    
+    let reqObj = {}
+      reqObj.headers = {"Content-Type": "application/json"}
+      reqObj.method = "PATCH"
+      reqObj.body = JSON.stringify(moreLikes)
+    
+    fetch(`http://localhost:3000/toys/${toy.id}`, reqObj)
+      .then(resp => resp.json())
+      .then(newToy => {
+        this.setState({
+          toys: this.state.toys.map(toy => (toy.id === newToy.id) ? newToy : toy)
+        })
+      })
+  }
+
   render(){
     return (
       <>
         <Header/>
         { this.state.display
             ?
-          <ToyForm/>
+          <ToyForm addNewToy={this.addNewToy} />
             :
           null
         }
         <div className="buttonContainer">
           <button onClick={this.handleClick}> Add a Toy </button>
         </div>
-        <ToyContainer/>
+        <ToyContainer toys={this.state.toys} deleteToy={this.deleteToy} updateLikes={this.updateLikes} />
       </>
     );
   }
